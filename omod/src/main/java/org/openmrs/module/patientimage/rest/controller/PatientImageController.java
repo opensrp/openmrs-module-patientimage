@@ -157,7 +157,7 @@ public class PatientImageController extends MainResourceController {
 		List<Patient> list = ps.getPatients("", identifier, types, true);
 		
 		for (Patient patient : list) {
-		
+			
 			for (PatientIdentifier p : patient.getIdentifiers()) {
 				if (p.getIdentifier().equalsIgnoreCase(identifier)) {
 					return patient;
@@ -209,7 +209,7 @@ public class PatientImageController extends MainResourceController {
 	}
 	
 	private String addImage(MultipartFile file, String fileCategory, Patient patient) {
-		String name  = file.getOriginalFilename();
+		String name = file.getOriginalFilename();
 		PatientService patientService = Context.getPatientService();
 		try {
 			
