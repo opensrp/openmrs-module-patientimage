@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.io.FileUtils;
 import org.openmrs.Patient;
 import org.openmrs.PatientIdentifier;
+import org.openmrs.PatientIdentifierType;
 import org.openmrs.PersonAttribute;
 import org.openmrs.PersonAttributeType;
 import org.openmrs.api.PatientService;
@@ -110,28 +111,30 @@ public class PatientImageController extends MainResourceController {
 	
 	/**
 	 * 
-	 * @param patientid
-	 * @param fileCategory
+	 * @param patientIdenttifier
+	 * @param category
 	 * @param file
 	 * @return
 	 * @throws IOException
 	 */
 	@RequestMapping(value = "/uploadimage", method = RequestMethod.POST)
 	public @ResponseBody
-	String handleFileUpload(@RequestParam("patientid") String patientid, @RequestParam("fileCategory") String fileCategory,
-	        @RequestParam("file") MultipartFile file) throws IOException {
+	String handleFileUpload(@RequestParam("patientidentifier") String patientIdenttifier,
+	        @RequestParam("category") String category, @RequestParam("file") MultipartFile file) throws IOException {
 		String name = file.getName();
-		
-		if (patientid != null) {
+		patientIdenttifier = patientIdenttifier.trim();
+		category = category.trim();
+		if (!patientIdenttifier.isEmpty() && !patientIdenttifier.equalsIgnoreCase("")) {
 			
-			Patient patient = getPatientByIdentifier(patientid);
+			Patient patient = getPatientByIdentifier(patientIdenttifier);
 			
+			//String dpCategory =Context.getAdministrationService().getGlobalProperty("patientimage.DisplayI");
 			if (!file.isEmpty()) {
-				if (fileCategory.equalsIgnoreCase("dp")) {
+				if (category.equalsIgnoreCase("dp")) {
 					return addDP(file, patient);
 				} else {
 					
-					return addImage(file, fileCategory, patient);
+					return addImage(file, category, patient);
 				}
 			} else {
 				return "You failed to upload " + name + " because the file was empty.";
@@ -148,8 +151,13 @@ public class PatientImageController extends MainResourceController {
 	 * @return Patient
 	 */
 	private Patient getPatientByIdentifier(String identifier) {
-		List<Patient> list = Context.getPatientService().getAllPatients();
+		PatientService ps = Context.getPatientService();
+		List<PatientIdentifierType> types = ps.getAllPatientIdentifierTypes();
+		
+		List<Patient> list = ps.getPatients("", identifier, types, true);
+		
 		for (Patient patient : list) {
+		
 			for (PatientIdentifier p : patient.getIdentifiers()) {
 				if (p.getIdentifier().equalsIgnoreCase(identifier)) {
 					return patient;
@@ -162,10 +170,10 @@ public class PatientImageController extends MainResourceController {
 	}
 	
 	private String addDP(MultipartFile file, Patient patient) {
-		String name = "test";
+		//String name = file.getOriginalFilename();
 		PatientService patientService = Context.getPatientService();
 		try {
-			name = file.getOriginalFilename();
+			
 			String separator = System.getProperty("file.separator");
 			
 			File imgDir = new File(OpenmrsUtil.getApplicationDataDirectory(), "patient_images");
@@ -195,16 +203,16 @@ public class PatientImageController extends MainResourceController {
 		}
 		catch (Exception e) {
 			e.printStackTrace();
-			return "You failed to upload  => " + e.getMessage();
+			return "You failed to upload  " + e.getMessage();
 		}
 		
 	}
 	
 	private String addImage(MultipartFile file, String fileCategory, Patient patient) {
-		String name = "test";
+		String name  = file.getOriginalFilename();
 		PatientService patientService = Context.getPatientService();
 		try {
-			name = file.getOriginalFilename();
+			
 			String separator = System.getProperty("file.separator");
 			String relativePath = separator + patient.getUuid() + separator + fileCategory;
 			File imgDir = new File(OpenmrsUtil.getApplicationDataDirectory() + relativePath);
@@ -236,7 +244,7 @@ public class PatientImageController extends MainResourceController {
 		}
 		catch (Exception e) {
 			e.printStackTrace();
-			return "You failed to upload " + name + " => " + e.getMessage();
+			return "You failed to upload " + name + e.getMessage();
 		}
 		
 	}
